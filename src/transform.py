@@ -151,9 +151,9 @@ def fill_null_values(df: DataFrame) -> DataFrame:
     print("\n========== FILLING NULL VALUES ==========\n")
 
     cleaned_df = df.fillna({
-        "City": "Unknown",
-        "Colors Reported": "Unknown",
-        "Shape Reported": "Unknown"
+        "City": "UNKNOWN",
+        "Colors Reported": "UNKNOWN",
+        "Shape Reported": "UNKNOWN"
     })
 
     return cleaned_df
@@ -203,18 +203,52 @@ def convert_time_to_timestamp(df: DataFrame) -> DataFrame:
 
 def extract_time_information(df: DataFrame) -> DataFrame:
     """
-    Extracts year, month, and hour from the time column.
+    Extracts date, year, month, hour, day of the week, and month name, from the time column.
     """
-    print("\n========== EXTRACTING TIME INFORMATION ==========\n")
+    print("\n========== EXTRACTING TIME/DATE INFORMATION ==========\n")
 
     transformed_df = (
         df
+        .withColumn("date", F.to_date("time"))
         .withColumn("year", F.year("time"))
         .withColumn("month", F.month("time"))
         .withColumn("hour", F.hour("time"))
+        .withColumn("day_of_week", F.date_format("time", "EEEE"))
+        .withColumn("month_name", F.date_format("time", "MMMM"))
     )
 
     return transformed_df
+
+def count_reported_colors(df: DataFrame) -> DataFrame:
+    """
+    Counts the number of colors reported for each UFO sighting.
+    """
+    print("\n========== COUNTING REPORTED COLORS ==========\n")
+
+    transformed_df = df.withColumn(
+        "color_count",
+        F.when(
+            F.col("colors_reported") == "UNKNOWN",
+            0
+        ).otherwise(
+            F.size(F.split(F.col("colors_reported"), " "))
+        )
+    )
+
+    return transformed_df
+
+# This is a temporaly function to inspect each column individually for necessary transformation or standardization
+#The individual columns are specified in the main.py at the function call
+def display_unique_values(df: DataFrame, column: str):
+    """
+    Displays the unique values in a specified column.
+    """
+    print(f"\n========== UNIQUE VALUES ({column}) ==========\n")
+
+    df.select(column) \
+      .distinct() \
+      .orderBy(column) \
+      .show(100, truncate=False)
 
 
 def display_selected_columns(df: DataFrame):
@@ -248,3 +282,50 @@ def display_sorted_by_city(df: DataFrame):
 
     df.orderBy("city").show(10, truncate=False)
 
+
+def select_final_columns(df: DataFrame) -> DataFrame:
+    """
+    Selects and orders the columns for the final dataset.
+    """
+    print("\n========== SELECTING FINAL COLUMNS ==========\n")
+
+    final_df = df.select(
+        "city",
+        "state",
+        "shape_reported",
+        "colors_reported",
+        "color_count",
+        "time",
+        "date",
+        "year",
+        "month",
+        "month_name",
+        "day_of_week",
+        "hour"
+    )
+
+    return final_df
+
+def final_data_verification(df: DataFrame):
+    """
+    Performs final checks before loading the dataframe.
+    """
+
+    print("\n========== FINAL DATA VERIFICATION ==========\n")
+
+    print(f"Rows: {df.count()}")
+    print(f"Columns: {len(df.columns)}")
+
+    print("\nSchema:")
+    df.printSchema()
+
+    print("\nNULL VALUES:")
+
+    null_counts = df.select([
+        F.count(
+            F.when(F.col(column).isNull(), column)
+        ).alias(column)
+        for column in df.columns
+    ])
+
+    null_counts.show(truncate=False)

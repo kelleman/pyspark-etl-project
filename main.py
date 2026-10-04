@@ -20,6 +20,9 @@ from src.transform import (
     standardize_column_names,
     convert_time_to_timestamp,
     extract_time_information,
+    count_reported_colors,
+    select_final_columns,
+    display_unique_values,
     display_selected_columns,
     display_filtered_state,
     display_sorted_by_city,
@@ -84,7 +87,7 @@ def main():
         df = fill_null_values(df)
         
         # Remove duplicate rows
-        remove_duplicate_rows(df)
+        df = remove_duplicate_rows(df)
 
 
         # ======================================================
@@ -105,8 +108,19 @@ def main():
         # Convert time column to timestamp
         df = convert_time_to_timestamp(df)
 
-        # Extract year, month, and hour
+        # Extract date, year, month, hour, day of the week, month name, 
         df = extract_time_information(df)
+
+        #Counts the number of colors reported for each UFO sighting
+        df = count_reported_colors(df)
+
+        # Select final columns
+        df = select_final_columns(df)
+        df.printSchema()
+        df.show(10, truncate=False)
+
+        # Display unique shape values
+        display_unique_values(df, "colors_reported")
 
         # Display selected columns
         display_selected_columns(df)
