@@ -22,12 +22,15 @@ from src.transform import (
     extract_time_information,
     count_reported_colors,
     select_final_columns,
+    final_data_verification,
     display_unique_values,
     display_selected_columns,
     display_filtered_state,
     display_sorted_by_city,
+    select_final_columns,
+    final_data_verification,
 )
-
+from src.load import load_to_postgresql
 
 def main():
 
@@ -114,11 +117,6 @@ def main():
         #Counts the number of colors reported for each UFO sighting
         df = count_reported_colors(df)
 
-        # Select final columns
-        df = select_final_columns(df)
-        df.printSchema()
-        df.show(10, truncate=False)
-
         # Display unique shape values
         display_unique_values(df, "colors_reported")
 
@@ -130,6 +128,17 @@ def main():
 
         # Sort records by city
         display_sorted_by_city(df)
+
+         # Select final columns
+        df = select_final_columns(df)
+        # df.printSchema()
+        # df.show(10, truncate=False)
+
+        # Final verification before loading
+        final_data_verification(df)
+
+        #load dataFrame to postdres db
+        load_to_postgresql(df)
 
 
     finally:
